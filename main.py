@@ -1,9 +1,7 @@
-#import matplotlib.pyplot as plt
 import pprint as pp
 import fitbit
 import json
 import math
-# from gather_keys_oauth2 import OAuth2Server
 
 from lib.day import Day
 import pandas as pd 
@@ -116,17 +114,6 @@ except Exception as e:
 	print(e.msg)
 	print("Unable to load credentials")
 	exit()
-
-# server = OAuth2Server(CLIENT_ID, CLIENT_SECRET)
-# authorize_response = server.browser_authorize()
-
-# for key, value in server.fitbit.client.session.token.items():
-# 	print('{} = {}'.format(key, value))
-# ACCESS_TOKEN = server.fitbit.client.session.token["access_token"]
-# REFRESH_TOKEN = server.fitbit.client.session.token["refresh_token"]
-
-print(f"AccessToken: {ACCESS_TOKEN}")
-print(f"RefreshToken: {REFRESH_TOKEN}")
 
 oauthClient = fitbit.FitbitOauth2Client(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN, refresh_cb=save_updated_credentials)
 token_refresh_output = oauthClient.refresh_token()
