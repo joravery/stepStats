@@ -1,0 +1,22 @@
+from pandas import array
+
+
+class Statistics:
+    def __init__(self, step_days: array, step_goal: int) -> None:
+        ## Only allow initialization with a list of days
+        ## Process all immediately
+        if step_days is None or len(step_days) <=0:
+            raise "Cannot analyze statistics without any days"
+        self.days = step_days
+        self.step_goal = step_goal
+        self.months = {}
+        self.years = {}
+
+    def calculate_stats(self):
+        pass
+
+    def __repr__(self) -> str:
+        return "repr NOT YET IMPLEMENTED"
+
+    def __str__(self) -> str:
+        return "str NOT YET IMPLEMENTED"
