@@ -154,6 +154,9 @@ calculate_daily_rank(steps)
 print(f"Total entries: {len(steps['days']):,}")
 print(f"Step total from accumulate dict: {sum(entry.steps for entry in steps['days']):,}")
 (max_streak, streak_steps, streak_end) = find_maximum_streak(steps)
-print(f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps for an average of {int(streak_steps/max_streak):,} per day!")
+if streak_end == datetime.date.today()- datetime.timedelta(days=1) or streak_end == datetime.date.today():
+	print(f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an average of {int(streak_steps/max_streak):,} per day!")
+else:
+	print(f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps for an average of {int(streak_steps/max_streak):,} per day!")
 pp.pprint(f"Top ten days all-time")
 pp.pprint(sorted(steps['days'], key=lambda k: k.all_time_rank)[:10])
