@@ -1,4 +1,5 @@
 import pprint as pp
+from xmlrpc.client import DateTime
 import fitbit
 import json
 import math
@@ -123,23 +124,42 @@ ACCESS_TOKEN = token_refresh_output["access_token"]
 
 auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET,oauth2=True,access_token=ACCESS_TOKEN,refresh_token=REFRESH_TOKEN)
 
-steps = {"days": [], "month": {}, "year": {}}
-start_date = datetime.date.today()
+# Should move to utility file with tests
+def get_start_end_dates(join_date: datetime.date):
+	start_date = datetime.date.today()
+	# Get to start of current year, then get each year prior
+	date_ranges = []
+	date_ranges.append(get_current_year_range(start_date=start_date))
+	date_ranges = date_ranges + get_all_prior_years(start_date=start_date, join_date=join_date)
+	return date_ranges
 
+def get_current_year_range(start_date: datetime.date):
+	start_of_year = datetime.date(year=start_date.year, month=1, day=1)
+	return (start_of_year, start_date)
+
+def get_all_prior_years(start_date: datetime.date, join_date:datetime.date):
+	date_ranges = []
+	year = start_date.year - 1
+	while year >= join_date.year:
+		start_of_year = datetime.date(year=year, month=1, day=1)
+		end_of_year = datetime.datetime(year=year, month=12, day=31)
+		start_date = join_date if join_date > start_of_year else start_of_year
+		date_ranges.append((start_date, end_of_year))
+		year = year - 1
+	return date_ranges
+
+steps = {"days": [], "month": {}, "year": {}}
 # should replace pd call with datetime call, but by default datetime.datetime doesn't work with 'yyyy-mm-dd'
 join_date = datetime.datetime.strptime(get_user_joined_date(auth2_client), "%Y-%m-%d").date()
-
+date_ranges = get_start_end_dates(join_date)
 print(f"Join date: {join_date}")
-while start_date > join_date:
-	one_year_ago = datetime.date(year=start_date.year-1, month=start_date.month, day=start_date.day)
-	end_date = join_date if join_date > one_year_ago else one_year_ago
+for date_range in date_ranges:
+	end_date=date_range[0]
+	start_date=date_range[1]
 	try:
 		one_year = auth2_client.time_series("activities/steps", end_date=end_date, base_date=start_date)
 	except Exception as e:
 		print(f"Error when getting steps for {end_date} to {start_date}")
-	
-	# Bug here if start_date is at start of month (or close to it)
-	start_date = datetime.datetime(year=end_date.year, month=end_date.month, day=end_date.day-1).date()
 	steps['days'] += [Day(x) for x in one_year['activities-steps']]
 
 steps["days"] = sorted(steps["days"])
