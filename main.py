@@ -3,11 +3,14 @@ from xmlrpc.client import DateTime
 import fitbit
 import json
 import math
+from multiprocessing.pool import ThreadPool as Pool
 
 from lib.day import Day
 import pandas as pd 
 import datetime
+import time
 
+start_time = time.time()
 def get_user_joined_date(client):
 	try:
 		user_profile = client.user_profile_get()
@@ -103,6 +106,8 @@ def save_updated_credentials(response):
 		credFile.seek(0)
 		credFile.write(json.dumps(cred_dict))
 
+time_to_creds = time.time() - start_time
+print(f"Time before loading creds: {time_to_creds:.2f}")
 try: 
 	with open("./credentials.json", "r+") as credFile:
 		cred_dict = json.load(credFile)
@@ -116,9 +121,23 @@ except Exception as e:
 	print("Unable to load credentials")
 	exit()
 
+time_after_creds = time.time() - start_time
+print(f"Time spent loading creds: {time_after_creds - time_to_creds:.2f}")
+
 oauthClient = fitbit.FitbitOauth2Client(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN, refresh_cb=save_updated_credentials)
+time_after_client = time.time() - start_time
+print(f"Time spent creating OAuth2Client: {time_after_client - time_after_creds:.2f}")
 token_refresh_output = oauthClient.refresh_token()
+time_after_token_refresh = time.time() - start_time
+print(f"Time spent creating client: {time_after_token_refresh - time_after_client:.2f}")
+token_refresh_output = oauthClient.refresh_token()
+time_after_token_refresh = time.time() - start_time
+print(f"Time spent saving updated creds: {time_after_token_refresh - time_after_client:.2f}")
+
 save_updated_credentials(token_refresh_output)
+time_after_token_saving = time.time() - start_time
+print(f"Time spent saving updated creds: {time_after_token_saving - time_after_token_refresh:.2f}")
+
 REFRESH_TOKEN = token_refresh_output["refresh_token"]
 ACCESS_TOKEN = token_refresh_output["access_token"]
 
@@ -150,25 +169,46 @@ def get_all_prior_years(start_date: datetime.date, join_date:datetime.date):
 
 steps = {"days": [], "month": {}, "year": {}}
 # should replace pd call with datetime call, but by default datetime.datetime doesn't work with 'yyyy-mm-dd'
+time_before_joined_date = time.time() - start_time
 join_date = datetime.datetime.strptime(get_user_joined_date(auth2_client), "%Y-%m-%d").date()
-date_ranges = get_start_end_dates(join_date)
-print(f"Join date: {join_date}")
-for date_range in date_ranges:
-	end_date=date_range[0]
-	start_date=date_range[1]
+time_after_joined_date = time.time() - start_time
+print(f"Time spent getting join date: {time_after_joined_date - time_before_joined_date:.2f}")
+
+def get_steps_by_date_range(args:tuple=None):
+	# if client is None or date_range is None:
+	# 	raise Error("Must pass client")
+	end_date=args[0]
+	start_date=args[1]
+	auth2_client = args[2]
 	try:
-		one_year = auth2_client.time_series("activities/steps", end_date=end_date, base_date=start_date)
+		return auth2_client.time_series("activities/steps", end_date=end_date, base_date=start_date)
 	except Exception as e:
 		print(f"Error when getting steps for {end_date} to {start_date}")
-	steps['days'] += [Day(x) for x in one_year['activities-steps']]
 
+print(f"Join date: {join_date}")
+date_ranges = get_start_end_dates(join_date)
+
+# maybe find a better way to pass the client?
+bad_args = [(x[0], x[1], auth2_client) for x in date_ranges]
+pool = Pool(processes=len(date_ranges))
+day_responses = pool.map(get_steps_by_date_range, bad_args)
+for day_response in day_responses:
+	steps['days'] += [Day(x) for x in day_response['activities-steps']]
+
+time_after_step_data = time.time() - start_time
+print(f"Time spent getting step data: {time_after_step_data - time_after_joined_date:.2f}")
 steps["days"] = sorted(steps["days"])
 calculate_sums(steps)
 calculate_averages(steps)
 calculate_percent_at_goal(steps)
 calculate_daily_rank(steps)
 
-# pp.pprint(steps["days"])
+
+time_after_calculations = time.time() - start_time
+print(f"Time spent calculating: {time_after_calculations - time_after_step_data:.2f}")
+
+print("Last 10 days: ")
+pp.pprint(steps["days"][-10:])
 # pp.pprint(steps["month"])
 # pp.pprint(steps["year"])
 print(f"Total entries: {len(steps['days']):,}")
@@ -180,3 +220,5 @@ else:
 	print(f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps for an average of {int(streak_steps/max_streak):,} per day!")
 pp.pprint(f"Top ten days all-time")
 pp.pprint(sorted(steps['days'], key=lambda k: k.all_time_rank)[:10])
+
+print(f"Total time: {time.time() - start_time:.2f}")
