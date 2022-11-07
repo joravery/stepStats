@@ -1,27 +1,14 @@
 import pprint as pp
-from xmlrpc.client import DateTime
 import fitbit
 import json
-import math
 from multiprocessing.pool import ThreadPool as Pool
 
 from lib.day import Day
-import pandas as pd 
+from lib import client_helper
 import datetime
 import time
 
 start_time = time.time()
-def get_user_joined_date(client):
-	try:
-		user_profile = client.user_profile_get()
-	except Exception as e:
-		print("Unable to get user profile from client")
-		raise e
-	try:
-		return user_profile['user']['memberSince']
-	except Exception as e:
-		print("User profile from API missing either 'user' or 'memberSince' keys")
-		raise e
 
 def calculate_percent_at_goal(steps, goal=5000):
 	for month in steps["month"]:
@@ -42,8 +29,6 @@ def calculate_daily_rank(steps):
 	for i in range(0, len(step_sorted)):
 		step_sorted[i].all_time_rank = i+1
 		step_sorted[i].top_percentile = i/len(step_sorted) * 100
-	# default object comparators will sort by date
-	steps["days"] = sorted(step_sorted)
 
 def calculate_sums(steps, goal=5000):
 	for day in steps["days"]:
@@ -170,13 +155,11 @@ def get_all_prior_years(start_date: datetime.date, join_date:datetime.date):
 steps = {"days": [], "month": {}, "year": {}}
 # should replace pd call with datetime call, but by default datetime.datetime doesn't work with 'yyyy-mm-dd'
 time_before_joined_date = time.time() - start_time
-join_date = datetime.datetime.strptime(get_user_joined_date(auth2_client), "%Y-%m-%d").date()
+join_date = datetime.datetime.strptime(client_helper.get_user_joined_date(auth2_client), "%Y-%m-%d").date()
 time_after_joined_date = time.time() - start_time
 print(f"Time spent getting join date: {time_after_joined_date - time_before_joined_date:.2f}")
 
 def get_steps_by_date_range(args:tuple=None):
-	# if client is None or date_range is None:
-	# 	raise Error("Must pass client")
 	end_date=args[0]
 	start_date=args[1]
 	auth2_client = args[2]
