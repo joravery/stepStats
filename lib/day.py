@@ -13,6 +13,10 @@ class Day:
     def __lt__(self, other):
         return self.date < other.date
 
+    def __eq__(self, other):
+        ## If two dates are equal one should be discarded else it will double count steps for stat calculation
+        return not self.date < other.date and not self.date > other.date and self.steps == other.steps
+
     def __repr__(self):
         return self.__str__()
         
