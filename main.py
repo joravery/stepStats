@@ -4,6 +4,7 @@ import json
 from multiprocessing.pool import ThreadPool as Pool
 
 from lib.day import Day
+from lib.statistics import Statistics
 from lib import client_helper
 import datetime
 import time
@@ -50,36 +51,6 @@ def add_to(daily_step_count, year, goal_met, month=None):
 	steps[granularity][key]["days"] += 1
 	if goal_met:
 		steps[granularity][key]["goal_days"] += 1
-
-def calculate_streak_per_year(steps, goal):
-	pass
-
-def find_maximum_streak(steps, goal=5000):
-	def is_bigger_streak(current_streak, max_streak, current_steps, max_steps):
-		if current_streak > max_streak:
-			return True
-		if current_streak == max_streak and current_steps > streak_steps:
-			return True
-		return False
-	max_streak = 0
-	streak_steps = 0
-	streak_end = ''
-	current_streak = 0
-	current_steps = 0
-
-	for i in range(0, len(steps['days'])):
-		day_steps = int(steps['days'][i].steps)
-		if day_steps >= goal:
-			current_streak += 1
-			current_steps += day_steps
-			if is_bigger_streak(current_streak, max_streak, current_steps, streak_steps):
-				max_streak = current_streak
-				streak_steps = current_steps
-				streak_end = steps['days'][i].date if i > 0 else ''
-		else:	
-			current_streak = 0
-			current_steps = 0
-	return (max_streak, streak_steps, streak_end)
 
 def save_updated_credentials(response):
 	ACCESS_TOKEN = response["access_token"]
@@ -153,7 +124,6 @@ def get_all_prior_years(start_date: datetime.date, join_date:datetime.date):
 	return date_ranges
 
 steps = {"days": [], "month": {}, "year": {}}
-# should replace pd call with datetime call, but by default datetime.datetime doesn't work with 'yyyy-mm-dd'
 time_before_joined_date = time.time() - start_time
 join_date = datetime.datetime.strptime(client_helper.get_user_joined_date(auth2_client), "%Y-%m-%d").date()
 time_after_joined_date = time.time() - start_time
@@ -181,7 +151,10 @@ for day_response in day_responses:
 time_after_step_data = time.time() - start_time
 print(f"Time spent getting step data: {time_after_step_data - time_after_joined_date:.2f}")
 steps["days"] = sorted(steps["days"])
-calculate_sums(steps)
+stats = Statistics(steps["days"])
+
+
+calculate_sums(steps) # ported to stats, not removing yet as not all functions are using stats
 calculate_averages(steps)
 calculate_percent_at_goal(steps)
 calculate_daily_rank(steps)
@@ -191,12 +164,12 @@ time_after_calculations = time.time() - start_time
 print(f"Time spent calculating: {time_after_calculations - time_after_step_data:.2f}")
 
 print("Last 10 days: ")
-pp.pprint(steps["days"][-10:])
+pp.pprint(stats.get_most_recent_days())
 # pp.pprint(steps["month"])
 # pp.pprint(steps["year"])
 print(f"Total entries: {len(steps['days']):,}")
 print(f"Step total from accumulate dict: {sum(entry.steps for entry in steps['days']):,}")
-(max_streak, streak_steps, streak_end) = find_maximum_streak(steps)
+(max_streak, streak_steps, streak_end) = stats.find_maximum_streak()
 if streak_end == datetime.date.today()- datetime.timedelta(days=1) or streak_end == datetime.date.today():
 	print(f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an average of {int(streak_steps/max_streak):,} per day!")
 else:
