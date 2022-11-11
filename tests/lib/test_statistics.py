@@ -60,6 +60,38 @@ def test_find_maximum_streak_no_streak():
     assert(streak_step == expected_steps)
     assert(streak_end == '')
 
+
+def test_daily_rank():
+    first_date = datetime.date(year=2022, month=11, day=1)
+    first_day_fewer_steps = get_single_valid_day(200, first_date)    
+    second_day_more_steps = get_single_valid_day(220, first_date + datetime.timedelta(days=1))
+    stats = Statistics([first_day_fewer_steps, second_day_more_steps], step_goal=STEP_GOAL)
+    assert (stats.days[0].all_time_rank == 2)
+    assert (stats.days[1].all_time_rank == 1)
+
+def test_monthly_average():
+    first_date = datetime.date(year=2022, month=11, day=1)
+    first_day_fewer_steps = get_single_valid_day(200, first_date)    
+    second_day_more_steps = get_single_valid_day(220, first_date + datetime.timedelta(days=1))
+    stats = Statistics([first_day_fewer_steps, second_day_more_steps], step_goal=STEP_GOAL)
+    assert(stats.months["2022-11"]["daily_average_steps"] == 210)
+
+def test_monthly_average_rounds_down():
+    first_date = datetime.date(year=2022, month=11, day=1)
+    first_day_fewer_steps = get_single_valid_day(200, first_date)    
+    second_day_more_steps = get_single_valid_day(221, first_date + datetime.timedelta(days=1))
+    stats = Statistics([first_day_fewer_steps, second_day_more_steps], step_goal=STEP_GOAL)
+    assert(stats.months["2022-11"]["daily_average_steps"] == 210)
+
+def test_percent_at_goal():
+    first_date = datetime.date(year=2022, month=11, day=1)
+    first_day_fewer_steps = get_single_valid_day(5002, first_date)    
+    second_day_more_steps = get_single_valid_day(4398, first_date + datetime.timedelta(days=1))
+    stats = Statistics([first_day_fewer_steps, second_day_more_steps], step_goal=STEP_GOAL)
+    assert(stats.months["2022-11"]["goal_percent"] == 50)
+    assert(stats.years["2022"]["goal_percent"] == 50)
+
+
 def get_streak(before_days=random.randrange(1,100), streak_days=0, after_days=random.randrange(1,100)):
     days = []
     end_date = None

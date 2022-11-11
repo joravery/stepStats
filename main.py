@@ -11,47 +11,6 @@ import time
 
 start_time = time.time()
 
-def calculate_percent_at_goal(steps, goal=5000):
-	for month in steps["month"]:
-		steps["month"][month]["goal_percent"] = float(steps["month"][month]["goal_days"]/steps["month"][month]["days"] * 100)
-
-	for year in steps["year"]:
-		steps["year"][year]["goal_percent"] = float(steps["year"][year]["goal_days"]/steps["year"][year]["days"] * 100)
-
-def calculate_averages(steps):
-	for month in steps["month"]:
-		steps["month"][month]["daily_average_steps"] = int(steps["month"][month]["steps"]/steps["month"][month]["days"])
-
-	for year in steps["year"]:
-		steps["year"][year]["daily_average_steps"] = int(steps["year"][year]["steps"]/steps["year"][year]["days"])
-
-def calculate_daily_rank(steps):
-	step_sorted = sorted(steps["days"], key=lambda k: k.steps, reverse=True)
-	for i in range(0, len(step_sorted)):
-		step_sorted[i].all_time_rank = i+1
-		step_sorted[i].top_percentile = i/len(step_sorted) * 100
-
-def calculate_sums(steps, goal=5000):
-	for day in steps["days"]:
-		year, month = (day.date.year, day.date.month)
-		add_to_totals(steps, year, month, day.steps, goal)
-
-def add_to_totals(steps, year, month, daily_step_count, goal):
-	add_to(daily_step_count, year, daily_step_count>goal)
-	add_to(daily_step_count, year, daily_step_count>goal, month=month)
-
-def add_to(daily_step_count, year, goal_met, month=None):
-	granularity = "year" if month is None else "month"
-	key = f"{year}" if month is None else f"{year}-{month}"
-	
-	if key not in steps[granularity]:
-		steps[granularity][key]={"steps": 0, "days": 0, "goal_days": 0}
-	
-	steps[granularity][key]["steps"] += daily_step_count
-	steps[granularity][key]["days"] += 1
-	if goal_met:
-		steps[granularity][key]["goal_days"] += 1
-
 def save_updated_credentials(response):
 	ACCESS_TOKEN = response["access_token"]
 	REFRESH_TOKEN = response["refresh_token"]	
@@ -154,19 +113,12 @@ steps["days"] = sorted(steps["days"])
 stats = Statistics(steps["days"])
 
 
-calculate_sums(steps) # ported to stats, not removing yet as not all functions are using stats
-calculate_averages(steps)
-calculate_percent_at_goal(steps)
-calculate_daily_rank(steps)
-
 
 time_after_calculations = time.time() - start_time
 print(f"Time spent calculating: {time_after_calculations - time_after_step_data:.2f}")
 
 print("Last 10 days: ")
 pp.pprint(stats.get_most_recent_days())
-# pp.pprint(steps["month"])
-# pp.pprint(steps["year"])
 print(f"Total entries: {len(steps['days']):,}")
 print(f"Step total from accumulate dict: {sum(entry.steps for entry in steps['days']):,}")
 (max_streak, streak_steps, streak_end) = stats.find_maximum_streak()

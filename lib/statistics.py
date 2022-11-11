@@ -11,13 +11,16 @@ class Statistics:
         self.step_goal = step_goal
         self.months = {}
         self.years = {}
-        self.__calculate_sums__()
+        self.calculate_stats()
 
     def calculate_stats(self):
         '''
         Method for generating aggregate statistics and assigning daily ranks
         '''
         self.__calculate_sums__()
+        self.__calculate_averages__() 
+        self.__calculate_percent_at_goal__()
+        self.__calculate_daily_rank__()
 
     def get_most_recent_days(self, day_count=10):
         count = min(day_count, len(self.days))
@@ -54,7 +57,7 @@ class Statistics:
         for day in self.days:
             year, month = (day.date.year, day.date.month)
             goal_met = day.steps > self.step_goal
-            self.__add_to_stats_dict__(self.years, day.steps, year, goal_met)
+            self.__add_to_stats_dict__(self.years, day.steps, f"{year}", goal_met)
             self.__add_to_stats_dict__(self.months, day.steps, f"{year}-{month}", goal_met)
     
     def __add_to_stats_dict__(self, stats_dict, daily_step_count, key, goal_met):
@@ -71,3 +74,23 @@ class Statistics:
 
     def __str__(self) -> str:
         return "str NOT YET IMPLEMENTED"
+
+    def __calculate_percent_at_goal__(self):
+        for month in self.months:
+            self.months[month]["goal_percent"] = float(self.months[month]["goal_days"]/self.months[month]["days"] * 100)
+
+        for year in self.years:
+            self.years[year]["goal_percent"] = float(self.years[year]["goal_days"]/self.years[year]["days"] * 100)
+
+    def __calculate_averages__(self):
+        for month in self.months:
+            self.months[month]["daily_average_steps"] = int(self.months[month]["steps"]/self.months[month]["days"])
+
+        for year in self.years:
+            self.years[year]["daily_average_steps"] = int(self.years[year]["steps"]/self.years[year]["days"])
+
+    def __calculate_daily_rank__(self):
+        step_sorted = sorted(self.days, key=lambda k: k.steps, reverse=True)
+        for i in range(0, len(step_sorted)):
+            step_sorted[i].all_time_rank = i+1
+            step_sorted[i].top_percentile = i/len(step_sorted) * 100
