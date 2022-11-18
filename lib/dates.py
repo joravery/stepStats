@@ -18,7 +18,7 @@ def get_all_prior_years(start_date: datetime.date, join_date:datetime.date):
 	year = start_date.year - 1
 	while year >= join_date.year:
 		start_of_year = datetime.date(year=year, month=1, day=1)
-		end_of_year = datetime.datetime(year=year, month=12, day=31)
+		end_of_year = datetime.date(year=year, month=12, day=31)
 		start_date = join_date if join_date > start_of_year else start_of_year
 		date_ranges.append((start_date, end_of_year))
 		year = year - 1

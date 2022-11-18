@@ -19,9 +19,8 @@ local_credentials.save_updated_credentials(token_refresh_output)
 REFRESH_TOKEN = token_refresh_output["refresh_token"]
 ACCESS_TOKEN = token_refresh_output["access_token"]
 
-auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET,oauth2=True,access_token=ACCESS_TOKEN,refresh_token=REFRESH_TOKEN)
+auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET, oauth2=True, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN)
 
-steps = {"days": [], "month": {}, "year": {}}
 join_date = datetime.datetime.strptime(client_helper.get_user_joined_date(auth2_client), "%Y-%m-%d").date()
 
 def get_steps_by_date_range(args:tuple=None):
@@ -40,20 +39,20 @@ date_ranges = dates.get_start_end_dates(join_date)
 bad_args = [(x[0], x[1], auth2_client) for x in date_ranges]
 pool = Pool(processes=len(date_ranges))
 day_responses = pool.map(get_steps_by_date_range, bad_args)
+steps = []
 for day_response in day_responses:
-	steps['days'] += [Day(x) for x in day_response['activities-steps']]
+	steps += [Day(x) for x in day_response['activities-steps']]
 
-steps["days"] = sorted(steps["days"])
-stats = Statistics(steps["days"])
+steps = sorted(steps)
+stats = Statistics(steps)
 
 print("Last 10 days: ")
 pp.pprint(stats.get_most_recent_days())
-print(f"Total entries: {len(steps['days']):,}")
-print(f"Step total from accumulate dict: {sum(entry.steps for entry in steps['days']):,}")
+print(f"Total entries: {len(stats.days):,}")
 (max_streak, streak_steps, streak_end) = stats.find_maximum_streak()
 if streak_end == datetime.date.today()- datetime.timedelta(days=1) or streak_end == datetime.date.today():
 	print(f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an average of {int(streak_steps/max_streak):,} per day!")
 else:
 	print(f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps for an average of {int(streak_steps/max_streak):,} per day!")
 pp.pprint(f"Top ten days all-time")
-pp.pprint(sorted(steps['days'], key=lambda k: k.all_time_rank)[:10])
+pp.pprint(sorted(stats.days, key=lambda k: k.all_time_rank)[:10])
