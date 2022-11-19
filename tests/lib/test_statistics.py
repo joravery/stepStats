@@ -60,6 +60,19 @@ def test_find_maximum_streak_no_streak():
     assert(streak_step == expected_steps)
     assert(streak_end == '')
 
+def test_two_streaks():
+    first_streak_length = random.randrange(1, 20)
+    second_streak_length = random.randrange(21, 200)
+    (first_days, first_expected_steps, first_expected_end) = get_streak(before_days=5, streak_days=first_streak_length, after_days=2)
+    (second_days, second_expected_steps, second_expected_end) = get_streak(before_days=1, streak_days=second_streak_length, after_days=5)
+    all_days = first_days + second_days
+    stats = Statistics(all_days, step_goal=STEP_GOAL)
+
+    (max_streak, streak_step, streak_end) = stats.find_maximum_streak()
+
+    assert(max_streak == second_streak_length)
+    assert(streak_step == second_expected_steps)
+    assert(streak_end == second_expected_end)
 
 def test_daily_rank():
     first_date = datetime.date(year=2022, month=11, day=1)
