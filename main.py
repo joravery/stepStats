@@ -23,22 +23,12 @@ auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET, oauth2=True, access_token=AC
 
 join_date = datetime.datetime.strptime(client_helper.get_user_joined_date(auth2_client), "%Y-%m-%d").date()
 
-def get_steps_by_date_range(args:tuple=None):
-	end_date=args[0]
-	start_date=args[1]
-	auth2_client = args[2]
-	try:
-		return auth2_client.time_series("activities/steps", end_date=end_date, base_date=start_date)
-	except Exception as e:
-		print(f"Error when getting steps for {end_date} to {start_date}")
-
-print(f"Join date: {join_date}")
 date_ranges = dates.get_start_end_dates(join_date)
 
 # maybe find a better way to pass the client?
 bad_args = [(x[0], x[1], auth2_client) for x in date_ranges]
 pool = Pool(processes=len(date_ranges))
-day_responses = pool.map(get_steps_by_date_range, bad_args)
+day_responses = pool.map(client_helper.get_steps_by_date_range, bad_args)
 steps = []
 for day_response in day_responses:
 	steps += [Day(x) for x in day_response['activities-steps']]
