@@ -9,6 +9,8 @@ class Statistics:
             raise ValueError("Cannot analyze statistics without any days")
         self.days = step_days
         self.step_goal = step_goal
+        self.all_time_steps = 0
+        self.all_time_average = 0
         self.months = {}
         self.years = {}
         self.calculate_stats()
@@ -21,6 +23,7 @@ class Statistics:
         self.__calculate_averages__() 
         self.__calculate_percent_at_goal__()
         self.__calculate_daily_rank__()
+
 
     def get_most_recent_days(self, day_count=10):
         count = min(day_count, len(self.days))
@@ -55,6 +58,7 @@ class Statistics:
 
     def __calculate_sums__(self):
         for day in self.days:
+            self.all_time_steps += day.steps
             year, month = (day.date.year, day.date.month)
             goal_met = day.steps > self.step_goal
             self.__add_to_stats_dict__(self.years, day.steps, f"{year}", goal_met)
@@ -88,6 +92,8 @@ class Statistics:
 
         for year in self.years:
             self.years[year]["daily_average_steps"] = int(self.years[year]["steps"]/self.years[year]["days"])
+
+        self.all_time_average = self.all_time_steps // len(self.days)
 
     def __calculate_daily_rank__(self):
         step_sorted = sorted(self.days, key=lambda k: k.steps, reverse=True)

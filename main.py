@@ -2,6 +2,7 @@ import pprint as pp
 import fitbit
 import datetime
 from multiprocessing.pool import ThreadPool as Pool
+import jsonpickle
 
 from lib.day import Day
 from lib.statistics import Statistics
@@ -10,6 +11,7 @@ from lib.credentials.local import LocalFileCredentials
 from lib import dates
 
 CREDENTIAL_FILE_PATH="./credentials.json"
+LOCAL_JSON_FILE_PATH="./steps.json"
 
 local_credentials = LocalFileCredentials(CREDENTIAL_FILE_PATH)
 (CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN) = local_credentials.get_credentials()
@@ -35,14 +37,21 @@ for day_response in day_responses:
 
 steps = sorted(steps)
 stats = Statistics(steps)
+with open(LOCAL_JSON_FILE_PATH, 'w+') as jsonFile:
+	jsonFile.write(jsonpickle.encode(steps, unpicklable=False))
+
+meta_data = {"all_time_steps": stats.all_time_steps, "all_time_days": len(stats.days), "all_time_average": stats.all_time_average, "months": stats.months, "years": stats.years}
+with open("meta_data.json", 'w+') as jsonFile:
+	jsonFile.write(jsonpickle.encode(meta_data, unpicklable=False))
 
 print("Last 10 days: ")
 pp.pprint(stats.get_most_recent_days())
-print(f"Total entries: {len(stats.days):,}")
 (max_streak, streak_steps, streak_end) = stats.find_maximum_streak()
+print(f"Top ten days all-time")
+pp.pprint(sorted(stats.days, key=lambda k: k.all_time_rank)[:10])
 if streak_end == datetime.date.today()- datetime.timedelta(days=1) or streak_end == datetime.date.today():
 	print(f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an average of {int(streak_steps/max_streak):,} per day!")
 else:
 	print(f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps for an average of {int(streak_steps/max_streak):,} per day!")
-pp.pprint(f"Top ten days all-time")
-pp.pprint(sorted(stats.days, key=lambda k: k.all_time_rank)[:10])
+total_days = len(stats.days)
+print(f"Total days: {total_days:,}. Steps all-time: {stats.all_time_steps:,}. Average steps/day: {int(stats.all_time_steps/total_days):,}.")
