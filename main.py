@@ -4,11 +4,11 @@ import datetime
 from multiprocessing.pool import ThreadPool as Pool
 import jsonpickle
 
-from lib.day import Day
-from lib.statistics import Statistics
-from lib import client_helper
-from lib.credentials.local import LocalFileCredentials
-from lib import dates
+from util.day import Day
+from util.statistics import Statistics
+from util import client_helper
+from util.credentials.local import LocalFileCredentials
+from util import dates
 
 CREDENTIAL_FILE_PATH="./credentials.json"
 LOCAL_JSON_FILE_PATH="./steps.json"

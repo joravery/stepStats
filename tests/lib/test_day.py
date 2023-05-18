@@ -1,6 +1,6 @@
 import pytest
 import datetime
-from lib.day import Day
+from util.day import Day
 
 def test_day_requires_data():
     with pytest.raises(TypeError):

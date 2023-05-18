@@ -1,5 +1,5 @@
 import datetime
-from lib.dates import *
+from util.dates import *
 
 def test_same_year_returns_one_range():
     today = datetime.date.today()

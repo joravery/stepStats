@@ -1,7 +1,7 @@
 import pytest
 import datetime
-from lib.statistics import Statistics
-from lib.day import Day
+from util.statistics import Statistics
+from util.day import Day
 import random
 
 STEP_GOAL=5000
