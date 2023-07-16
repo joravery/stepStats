@@ -167,3 +167,6 @@ lambda_build
 steps.json
 meta_data.json
 tmp*
+bin
+lib
+pyvenv.cfg
