@@ -17,36 +17,12 @@ from util import dates
 STEPS_FILE_NAME = os.environ['steps_file_name']
 WEBSITE_BUCKET_NAME = os.environ['public_bucket_name']
 
+
 def lambda_handler(event, context):
-    lambda_fitbit_credentials = AWSLambdaCredentials()
-    (CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN) = lambda_fitbit_credentials.get_credentials()
-    oauthClient = fitbit.FitbitOauth2Client(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN, refresh_cb=lambda_fitbit_credentials.save_updated_credentials)
-    token_refresh_output = oauthClient.refresh_token()
-    REFRESH_TOKEN = token_refresh_output["refresh_token"]
-    ACCESS_TOKEN = token_refresh_output["access_token"]
-
-    auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET, oauth2=True, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN)
-
+    auth2_client = get_oauth_client()
     existing_metadata = get_meta_data_from_s3()
-    # Reducing calls to FitBit API in attempt to stay under 150 API requests per hour
-    if "join_date" in existing_metadata:
-        join_date = datetime.datetime.strptime(existing_metadata["join_date"], "%Y-%m-%d").date()
-    else:
-        join_date_string = client_helper.get_user_joined_date(auth2_client)
-        join_date = datetime.datetime.strptime(join_date_string, "%Y-%m-%d").date()
-        existing_metadata["join_date"] = join_date_string
-
-    date_ranges = dates.get_start_end_dates(join_date)
-
-    steps = []
-    for (start_date, end_date) in date_ranges:
-        day_response = client_helper.get_steps_by_date_range((start_date, end_date, auth2_client))
-        steps += [Day(x) for x in day_response['activities-steps']]
-
-    steps = sorted(steps)
-    today = datetime.datetime.now().astimezone(ZoneInfo("America/Los_Angeles")).date()
-    steps = list(filter(lambda day: day.date <= today, steps))
-    stats = Statistics(steps)
+    join_date = get_join_date(existing_metadata, auth2_client)
+    steps, stats = get_steps(join_date, auth2_client)
 
     print("Last 10 days: ")
     pp.pprint(stats.get_most_recent_days())
@@ -66,6 +42,38 @@ def lambda_handler(event, context):
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
     }
+
+def get_steps(join_date, auth2_client):
+    date_ranges = dates.get_start_end_dates(join_date)
+    steps = []
+    for (start_date, end_date) in date_ranges:
+        day_response = client_helper.get_steps_by_date_range((start_date, end_date, auth2_client))
+        steps += [Day(x) for x in day_response['activities-steps']]
+
+    steps = sorted(steps)
+    today = datetime.datetime.now().astimezone(ZoneInfo("America/Los_Angeles")).date()
+    steps = list(filter(lambda day: day.date <= today, steps))
+    stats = Statistics(steps)
+    return steps, stats
+
+def get_join_date(existing_metadata, auth2_client):
+    if "join_date" in existing_metadata:
+        join_date = datetime.datetime.strptime(existing_metadata["join_date"], "%Y-%m-%d").date()
+    else:
+        join_date_string = client_helper.get_user_joined_date(auth2_client)
+        join_date = datetime.datetime.strptime(join_date_string, "%Y-%m-%d").date()
+        existing_metadata["join_date"] = join_date_string
+    return join_date
+
+def get_oauth_client():
+    lambda_fitbit_credentials = AWSLambdaCredentials()
+    (CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN, REFRESH_TOKEN) = lambda_fitbit_credentials.get_credentials()
+    oauthClient = fitbit.FitbitOauth2Client(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN, refresh_cb=lambda_fitbit_credentials.save_updated_credentials)
+    token_refresh_output = oauthClient.refresh_token()
+    REFRESH_TOKEN = token_refresh_output["refresh_token"]
+    ACCESS_TOKEN = token_refresh_output["access_token"]
+
+    return fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET, oauth2=True, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN)
 
 def build_metadata_from_stats(stats: Statistics, existing_metadata: dict) -> dict:
     metadata = {"join_date": existing_metadata["join_date"]}

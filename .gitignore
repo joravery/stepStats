@@ -170,3 +170,4 @@ tmp*
 bin
 lib
 pyvenv.cfg
+.vscode
