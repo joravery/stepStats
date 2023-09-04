@@ -13,6 +13,7 @@ from util.statistics import Statistics
 from util import client_helper
 from util.credentials.aws_lambda import AWSLambdaCredentials
 from util import dates
+from util.compression import compress_string
 
 STEPS_FILE_NAME = os.environ['steps_file_name']
 WEBSITE_BUCKET_NAME = os.environ['public_bucket_name']
@@ -35,8 +36,10 @@ def lambda_handler(event, context):
     print(f"Total days: {total_days:,}. Steps all-time: {stats.all_time_steps:,}. Average steps/day: {int(stats.all_time_steps/total_days):,}.")
 
     stats_metadata = build_metadata_from_stats(stats, existing_metadata)
+    compressed_json = prepare_json(steps, stats_metadata)
+
     print("Uploading to s3 ...")
-    upload_to_s3(steps, stats_metadata)
+    upload_steps_to_s3(compressed_json)
     print("Successfully uploaded all files to S3")
     return {
         'statusCode': 200,
@@ -86,17 +89,25 @@ def build_metadata_from_stats(stats: Statistics, existing_metadata: dict) -> dic
 
     return metadata
     
-def upload_to_s3(steps, metadata, s3_bucket=WEBSITE_BUCKET_NAME):
+def prepare_json(steps, metadata):
+    data = {"stats": metadata, "days": steps}
+    data_json = str(jsonpickle.encode(data, unpicklable=False))
+    return compress_string(data_json)
+
+
+def upload_steps_to_s3(json_bytes, s3_bucket=WEBSITE_BUCKET_NAME):
     s3 = boto3.client('s3')
-    data_object = {"stats": metadata, "days": steps}
-    data_json = jsonpickle.encode(data_object, unpicklable=False)
-    for (filename, body) in [(STEPS_FILE_NAME, data_json)]:
-        print(f"Uploading {filename} to s3://{s3_bucket}/{filename}")
-        s3.put_object(
-            Bucket=s3_bucket,
-            Key=filename,
-            Body=body
-        )
+    print(f"Uploading {STEPS_FILE_NAME} to s3://{s3_bucket}/{STEPS_FILE_NAME}")
+    s3.put_object(
+        Bucket=s3_bucket,
+        Key=STEPS_FILE_NAME,
+        Body=json_bytes,
+        ContentEncoding="br",
+        Metadata={
+            "Content-Encoding": "br",
+            "Content-Type": "application/json"
+        }
+    )
 
 def get_meta_data_from_s3():
     try:
