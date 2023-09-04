@@ -20,15 +20,13 @@ jobs:
       - name: ls
         run: |
           ls -lah
-      - name: Create virtualenv
-        run: |
-          pip3 install virtualenv && python3 -m venv . && source bin/activate
+      - name: Create Docker Container
+        run: docker build -t step-stats .
       - name: Build lambda deployment zip
-        run: ./build.sh
+        run: docker run --name lambda_build step-stats
       - run: echo "This job's status is ${{ job.status }}."
-      - name: ls
-        run: |
-          ls -lah
+      - name: Copy deployment out of docker container
+        run: docker cp lambda_build:/build/deployment.zip .
       - uses: actions/upload-artifact@master
         with:
           name: deployment.zip
@@ -51,4 +49,3 @@ jobs:
           aws_region: ${{ secrets.AWS_REGION }}
           function_name: fitBitDataUpdater
           zip_file: ./package/deployment.zip
-          dry_run: true
