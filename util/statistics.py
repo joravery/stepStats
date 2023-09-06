@@ -60,7 +60,7 @@ class Statistics:
         for day in self.days:
             self.all_time_steps += day.steps
             year, month = (day.date.year, day.date.month)
-            goal_met = day.steps > self.step_goal
+            goal_met = day.steps >= self.step_goal
             self.__add_to_stats_dict__(self.years, day.steps, f"{year}", goal_met)
             self.__add_to_stats_dict__(self.months, day.steps, f"{year}-{month}", goal_met)
     
