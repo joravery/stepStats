@@ -1,6 +1,9 @@
 name: Build -> Test -> Package -> Deploy 🚀
 run-name: "Running for commit '${{ github.event.commits[0].message }}' on branch ${{ github.ref }}"
-on: [push]
+on: 
+  push:
+    branches:
+      - main
 jobs:
   Test:
     runs-on: ubuntu-latest
