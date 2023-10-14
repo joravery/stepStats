@@ -9,4 +9,5 @@ cd ../ &&
 zip -r deployment.zip util &&
 zip deployment.zip lambda_function.py &&
 cp deployment.zip ../ &&
-rm -rf lambda_build
+# rm -rf lambda_build
+echo ''
