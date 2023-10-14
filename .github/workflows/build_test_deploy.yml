@@ -1,6 +1,10 @@
 name: Build -> Test -> Package -> Deploy 🚀
 run-name: "Running for commit '${{ github.event.commits[0].message }}' on branch ${{ github.ref }}"
-on: [push]
+on: 
+  push:
+    branches:
+      - main
+      - garmin
 jobs:
   Test:
     runs-on: ubuntu-latest
@@ -47,5 +51,5 @@ jobs:
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: ${{ secrets.AWS_REGION }}
-          function_name: fitBitDataUpdater
+          function_name: garminDataUpdater
           zip_file: ./package/deployment.zip

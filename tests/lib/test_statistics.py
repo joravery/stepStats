@@ -127,4 +127,4 @@ def get_streak(before_days=random.randrange(1,100), streak_days=0, after_days=ra
     return (days, steps, end_date)
 
 def get_single_valid_day(steps: int=1234, date: datetime.date=datetime.date(year=2021, month=10, day=11)):
-    return Day({"value": steps, "dateTime": f"{date.year}-{date.month}-{date.day}"})
+    return Day({"steps": steps, "date": f"{date.year}-{date.month}-{date.day}"})

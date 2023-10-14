@@ -2,8 +2,8 @@ import datetime as dt
 
 class Day:
     def __init__(self, val_dict) -> None:
-        self.steps = int(val_dict["value"])
-        self.date = dt.datetime.strptime(val_dict["dateTime"], "%Y-%m-%d").date()
+        self.steps = int(val_dict["steps"])
+        self.date = dt.datetime.strptime(val_dict["date"], "%Y-%m-%d").date()
         self.all_time_rank = -1
         self.top_percentile = -1
     
