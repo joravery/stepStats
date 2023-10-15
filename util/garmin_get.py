@@ -31,7 +31,6 @@ def download_data(username, password, start_date):
 
     date, days = get_date_and_days(start_date)
     if days > 0:
-        print("Date range to update: %s (%d) to %s", date, days, "/tmp")
         files_downloaded = download.get_daily_summaries(date, days)
         return files_downloaded
 

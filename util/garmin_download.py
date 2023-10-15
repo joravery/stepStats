@@ -2,10 +2,8 @@
 """Heavily modified from https://github.com/tcgoetz/GarminDB/"""
 """Original author: Tom Goetz"""
 
-import os
 import datetime
 import time
-import json
 import random
 from garth import Client as GarthClient
 from garth.exc import GarthHTTPError
@@ -16,7 +14,6 @@ import fitfile.conversions as conversions
 class Download():
     """Class for downloading health data from Garmin Connect."""
 
-    garmin_connect_user_profile_url = "/userprofile-service/userprofile"
     garmin_connect_usersummary_url = "/usersummary-service/usersummary"
     garmin_connect_daily_summary_url = garmin_connect_usersummary_url + "/daily"
     garmin_base_domain = "garmin.com"
@@ -26,11 +23,10 @@ class Download():
         self.garth = GarthClient()
         self.garth.configure(domain=self.garmin_base_domain)
 
-    def login(self, username, password, base_dir="/tmp"):
+    def login(self, username, password):
         """Login to Garmin Connect."""
-        profile_dir = base_dir
-        if not username or not password or not profile_dir:
-            print("Missing config: need username, password, and base_dir.")
+        if not username or not password:
+            print("Missing config: need username and password")
             return
 
         print("login: %s %s", username, password[:4] + len(password[4:]) * '*')
@@ -38,33 +34,12 @@ class Download():
 
         self.social_profile = self.garth.profile
         self.user_prefs = self.garth.profile
-
-        if profile_dir:
-            self.save_json_to_file(f'{profile_dir}/social-profile', self.social_profile)
-            self.save_json_to_file(f'{profile_dir}/user-settings', self.garth.connectapi(f'{self.garmin_connect_user_profile_url}/user-settings'))
-            self.save_json_to_file(f'{profile_dir}/personal-information', self.garth.connectapi(f'{self.garmin_connect_user_profile_url}/personal-information'))
-
         self.display_name = self.social_profile['displayName']
         self.full_name = self.social_profile['fullName']
         print("succesful login: %s (%s)", self.full_name, self.display_name)
         return True
 
-    @classmethod
-    def __convert_to_json(cls, object):
-        return object.__str__()
-
-    @classmethod
-    def save_json_to_file(cls, filename, json_data, overwite=False):
-        """Save JSON formatted data to a file."""
-        full_filename = f'{filename}.json'
-        exists = os.path.isfile(full_filename)
-        if not exists or overwite:
-            print("%s %s", 'Overwriting' if exists else 'Saving', full_filename)
-            with open(full_filename, 'w') as file:
-                file.write(json.dumps(json_data, default=cls.__convert_to_json))
-                return full_filename
-
-    def __get_summary_day(self, date):
+    def get_daily_summary(self, date):
         print("get_summary_day: %s", date)
         date_str = date.strftime('%Y-%m-%d')
         params = {
@@ -85,7 +60,7 @@ class Download():
         step_days = []
         for day in tqdm(range(0, days), unit='days'):
             download_date = date + datetime.timedelta(days=day)
-            file_path = self.__get_summary_day( download_date)
+            file_path = self.get_daily_summary( download_date)
             step_days.append(file_path)
             # Sleep for between 1 and 2 seconds to avoid getting blocked by Garmin
             # for too many requests.
