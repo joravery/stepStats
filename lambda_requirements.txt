@@ -1,16 +1,13 @@
 brotli==1.0.9
 certifi==2022.12.7
-fitbit==0.3.1
 idna==3.4
 jsonpickle==3.0.1
 oauthlib==3.2.2
 python-dateutil==2.8.2
-# requests==2.28.2
 requests-oauthlib==1.3.1
 six==1.16.0
 urllib3==1.26.14
 MarkupSafe==2.1.3
-SQLAlchemy==2.0.19
 appnope==0.1.3
 asttokens==2.4.0
 backcall==0.2.0
@@ -23,9 +20,9 @@ cycler==0.11.0
 debugpy==1.8.0
 decorator==5.1.1
 executing==1.2.0
+garth >= 0.2.0
 fitfile>=1.1.4
 fonttools==4.42.1
-garmindb==3.5.0
 idbutils>=1.1.0
 ipykernel==6.25.1
 ipyleaflet==0.17.3
@@ -33,12 +30,7 @@ ipython==8.15.0
 ipywidgets==8.1.1
 jedi==0.19.0
 jinja2==3.1.2
-jupyter-client==8.3.1
-jupyter-core==5.3.1
-jupyterlab-widgets==3.0.9
 kiwisolver==1.4.5
-matplotlib==3.7.2
-matplotlib-inline==0.1.6
 nest-asyncio==1.5.8
 numpy==1.26.0
 parso==0.8.3

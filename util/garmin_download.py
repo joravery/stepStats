@@ -3,8 +3,6 @@
 """Original author: Tom Goetz"""
 
 import os
-import sys
-import logging
 import datetime
 import time
 import json
@@ -14,11 +12,6 @@ from garth.exc import GarthHTTPError
 from tqdm import tqdm
 
 import fitfile.conversions as conversions
-
-logger = logging.getLogger(__file__)
-logger.addHandler(logging.StreamHandler(stream=sys.stdout))
-root_logger = logging.getLogger()
-
 
 class Download():
     """Class for downloading health data from Garmin Connect."""
@@ -30,7 +23,6 @@ class Download():
 
     def __init__(self):
         """Create a new Download class instance."""
-        logger.debug("__init__")
         self.garth = GarthClient()
         self.garth.configure(domain=self.garmin_base_domain)
 
@@ -41,7 +33,7 @@ class Download():
             print("Missing config: need username, password, and base_dir.")
             return
 
-        logger.debug("login: %s %s", username, password[:4] + len(password[4:]) * '*')
+        print("login: %s %s", username, password[:4] + len(password[4:]) * '*')
         self.garth.login(username, password)
 
         self.social_profile = self.garth.profile
@@ -54,7 +46,7 @@ class Download():
 
         self.display_name = self.social_profile['displayName']
         self.full_name = self.social_profile['fullName']
-        root_logger.info("login: %s (%s)", self.full_name, self.display_name)
+        print("succesful login: %s (%s)", self.full_name, self.display_name)
         return True
 
     @classmethod
@@ -67,12 +59,13 @@ class Download():
         full_filename = f'{filename}.json'
         exists = os.path.isfile(full_filename)
         if not exists or overwite:
-            logger.info("%s %s", 'Overwriting' if exists else 'Saving', full_filename)
+            print("%s %s", 'Overwriting' if exists else 'Saving', full_filename)
             with open(full_filename, 'w') as file:
                 file.write(json.dumps(json_data, default=cls.__convert_to_json))
+                return full_filename
 
     def __get_summary_day(self, base_directory, date, overwite=True):
-        root_logger.info("get_summary_day: %s", date)
+        print("get_summary_day: %s", date)
         date_str = date.strftime('%Y-%m-%d')
         params = {
             'calendarDate': date_str,
@@ -80,19 +73,24 @@ class Download():
         }
         url = f'{self.garmin_connect_daily_summary_url}/{self.display_name}'
         json_filename = f'{base_directory}/daily_summary_{date_str}'
+        
         try:
-            self.save_json_to_file(json_filename, self.garth.connectapi(url, params=params), overwite)
+            full_file_path = self.save_json_to_file(json_filename, self.garth.connectapi(url, params=params), overwite)
+            return {date_str :full_file_path}
         except GarthHTTPError as e:
-            root_logger.error("Exception getting daily summary: %s", e)
+            print("Exception getting daily summary: %s", e)
 
     def get_daily_summaries(self, base_directory, date, days, overwite):
         """Download the daily summary data from Garmin Connect and save to a JSON file."""
-        root_logger.info("Getting daily summaries: %s (%d)", date, days)
+        print("Getting daily summaries: %s (%d)", date, days)
+        retrieved_files = []
         for day in tqdm(range(0, days), unit='days'):
             download_date = date + datetime.timedelta(days=day)
-            self.__get_summary_day(base_directory, download_date, overwite)
+            file_path = self.__get_summary_day(base_directory, download_date, overwite)
+            retrieved_files.append(file_path)
             # Sleep for between 1 and 2 seconds to avoid getting blocked by Garmin
             time.sleep(1 + random.random())
+        return retrieved_files
 
 
 

@@ -1,8 +1,5 @@
-from pandas import array
-
-
 class Statistics:
-    def __init__(self, step_days: array, step_goal: int=5000) -> None:
+    def __init__(self, step_days: list, step_goal: int=5000) -> None:
         ## Only allow initialization with a list of days
         ## Process all immediately
         if step_days is None or len(step_days) <=0:
