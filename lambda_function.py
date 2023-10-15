@@ -58,7 +58,6 @@ def merge_steps(steps, new_steps) -> list:
 
 def get_steps_since_last_date(start_date, username, password) -> list:
         steps = garmin_get_steps_since_last_date(start_date, username, password)
-        print(steps)
         return steps
 
 def get_steps_stats(steps) -> tuple:

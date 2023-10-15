@@ -64,7 +64,7 @@ class Download():
                 file.write(json.dumps(json_data, default=cls.__convert_to_json))
                 return full_filename
 
-    def __get_summary_day(self, base_directory, date, overwite=True):
+    def __get_summary_day(self, date):
         print("get_summary_day: %s", date)
         date_str = date.strftime('%Y-%m-%d')
         params = {
@@ -72,25 +72,26 @@ class Download():
             '_': str(conversions.dt_to_epoch_ms(conversions.date_to_dt(date)))
         }
         url = f'{self.garmin_connect_daily_summary_url}/{self.display_name}'
-        json_filename = f'{base_directory}/daily_summary_{date_str}'
         
         try:
-            full_file_path = self.save_json_to_file(json_filename, self.garth.connectapi(url, params=params), overwite)
-            return {date_str :full_file_path}
+            connect_response = self.garth.connectapi(url, params=params)
+            return {'date' :date_str, 'steps' : connect_response['totalSteps']}
         except GarthHTTPError as e:
             print("Exception getting daily summary: %s", e)
 
-    def get_daily_summaries(self, base_directory, date, days, overwite):
+    def get_daily_summaries(self, date, days):
         """Download the daily summary data from Garmin Connect and save to a JSON file."""
         print("Getting daily summaries: %s (%d)", date, days)
-        retrieved_files = []
+        step_days = []
         for day in tqdm(range(0, days), unit='days'):
             download_date = date + datetime.timedelta(days=day)
-            file_path = self.__get_summary_day(base_directory, download_date, overwite)
-            retrieved_files.append(file_path)
+            file_path = self.__get_summary_day( download_date)
+            step_days.append(file_path)
             # Sleep for between 1 and 2 seconds to avoid getting blocked by Garmin
-            time.sleep(1 + random.random())
-        return retrieved_files
+            # for too many requests.
+            if days > 3:
+                time.sleep(1 + random.random())
+        return step_days
 
 
 

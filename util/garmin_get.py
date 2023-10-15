@@ -21,7 +21,7 @@ def get_date_and_days(start_date):
     return (start_date, days)
 
 
-def download_data(overwite, username, password, start_date):
+def download_data(username, password, start_date):
     """Download daily summaries Garmin Connect and save the data in files"""
 
     download = Download()
@@ -32,23 +32,10 @@ def download_data(overwite, username, password, start_date):
     date, days = get_date_and_days(start_date)
     if days > 0:
         print("Date range to update: %s (%d) to %s", date, days, "/tmp")
-        files_downloaded = download.get_daily_summaries("/tmp", date, days, overwite)
+        files_downloaded = download.get_daily_summaries(date, days)
         return files_downloaded
-
-def load_steps_from_file(file):
-    for k, v in file.items():
-        path = v
-        date = k
-        with open(path, "r") as file:
-            f = json.load(file)
-            return {'date': date, 'steps': f['totalSteps']}
 
 def garmin_get_steps_since_last_date(start_date, username, password):
     print("Fetching data from Garmin Connect...")
-    overwrite = True
-    files = download_data(overwrite, username, password, start_date)
-    steps = []
-    for file in files:
-        print(f"File: {file}")
-        steps.append(load_steps_from_file(file))
-    return steps
+    return download_data(username, password, start_date)
+    
