@@ -29,18 +29,18 @@ class Download():
             print("Missing config: need username and password")
             return
 
-        print("login: %s %s", username, password[:4] + len(password[4:]) * '*')
+        print(f"login user: {username}, pass: {password[:4] + len(password[4:]) * '*'}")
         self.garth.login(username, password)
 
         self.social_profile = self.garth.profile
         self.user_prefs = self.garth.profile
         self.display_name = self.social_profile['displayName']
         self.full_name = self.social_profile['fullName']
-        print("succesful login: %s (%s)", self.full_name, self.display_name)
+        print(f"succesful login: {self.full_name} ({self.display_name})")
         return True
 
     def get_daily_summary(self, date):
-        print("get_summary_day: %s", date)
+        print(f"get_summary_day: {date}" )
         date_str = date.strftime('%Y-%m-%d')
         params = {
             'calendarDate': date_str,
@@ -52,11 +52,11 @@ class Download():
             connect_response = self.garth.connectapi(url, params=params)
             return {'date' :date_str, 'steps' : connect_response['totalSteps']}
         except GarthHTTPError as e:
-            print("Exception getting daily summary: %s", e)
+            print(f"Exception getting daily summary: {e}")
 
     def get_daily_summaries(self, date, days):
         """Download the daily summary data from Garmin Connect and save to a JSON file."""
-        print("Getting daily summaries: %s (%d)", date, days)
+        print(f"Getting daily summaries: {date} ({days})")
         step_days = []
         for day in tqdm(range(0, days), unit='days'):
             download_date = date + datetime.timedelta(days=day)
@@ -67,7 +67,3 @@ class Download():
             if days > 3:
                 time.sleep(1 + random.random())
         return step_days
-
-
-
-    

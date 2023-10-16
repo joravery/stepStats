@@ -27,7 +27,7 @@ def lambda_handler(event, context):
     steps = merge_steps(steps, new_steps)
     upload_compressed_steps_to_s3(compress_string(str(jsonpickle.encode(steps, unpicklable=False))), SECURE_BUCKET_NAME, STEPS_FILE_NAME)
     
-    steps, stats = get_steps_stats([Day(x) for x in steps])
+    steps, stats = get_steps_stats([Day(x) for x in steps if x['date'] and x['steps']])
     (max_streak, streak_steps, streak_end) = stats.find_maximum_streak()
     if streak_end == datetime.date.today()- datetime.timedelta(days=1) or streak_end == datetime.date.today():
         print(f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an average of {int(streak_steps/max_streak):,} per day!")
