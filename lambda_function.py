@@ -49,6 +49,8 @@ def merge_steps(steps, new_steps) -> list:
     if steps is None or new_steps is None:
         return steps
     for day in new_steps:
+        if day["date"] is None or day["steps"] is None:
+            continue
         for existing_day in steps[::-1]:
             if day["date"] == existing_day["date"] and day["steps"] > existing_day["steps"]:
                 existing_day["steps"] = day["steps"]
