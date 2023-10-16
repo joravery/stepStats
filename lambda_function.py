@@ -19,7 +19,7 @@ def lambda_handler(event, context):
     steps = get_current_file_from_s3(SECURE_BUCKET_NAME, STEPS_FILE_NAME)
     username, password = AWSLambdaCredentials().get_credentials()
 
-    # Assumes steps is sorted already by date
+    steps = sorted(steps, key=lambda x: x["date"])
     yesterday = datetime.datetime.strptime(steps[-2]["date"], "%Y-%m-%d").date()
     print(f"Last date in current steps: {yesterday}")
     
@@ -46,14 +46,18 @@ def lambda_handler(event, context):
     }
 
 def merge_steps(steps, new_steps) -> list:
-    ### Inefficient, but it works ... for shame
+    if steps is None or new_steps is None:
+        return steps
     for day in new_steps:
-        if day["date"] not in [x["date"] for x in steps]:
-            steps.append(day)
-        elif day["date"] in [x["date"] for x in steps]:
-            for i, step in enumerate(steps):
-                if step["date"] == day["date"] and step["steps"] < day["steps"]:
-                    steps[i] = day
+        for existing_day in steps[::-1]:
+            if day["date"] == existing_day["date"] and day["steps"] > existing_day["steps"]:
+                existing_day["steps"] = day["steps"]
+                break
+            elif day["date"] > existing_day["date"]:
+                steps.append(day)
+                break
+            else:
+                break
     return steps
 
 def get_steps_since_last_date(start_date, username, password) -> list:
