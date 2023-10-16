@@ -48,19 +48,27 @@ def lambda_handler(event, context):
 def merge_steps(steps, new_steps) -> list:
     if steps is None or new_steps is None:
         return steps
-    for day in new_steps:
-        if day["date"] is None or day["steps"] is None:
+    for new_day in new_steps:
+        if missing_fields(new_day):
             continue
         for existing_day in steps[::-1]:
-            if day["date"] == existing_day["date"] and day["steps"] > existing_day["steps"]:
-                existing_day["steps"] = day["steps"]
+            if should_update_step_count(existing_day, new_day):
+                existing_day["steps"] = new_day["steps"]
                 break
-            elif day["date"] > existing_day["date"]:
-                steps.append(day)
+            elif new_day["date"] > existing_day["date"]:
+                steps.append(new_day)
                 break
             else:
                 break
     return steps
+
+def should_update_step_count(existing_day, new_day) -> bool:
+    if existing_day["date"] == new_day["date"]:
+        return existing_day["steps"] is None or new_day["steps"] > existing_day["steps"] 
+    return False
+
+def missing_fields(day) -> bool:
+    return day["date"] is None or day["steps"] is None
 
 def get_steps_since_last_date(start_date, username, password) -> list:
         steps = garmin_get_steps_since_last_date(start_date, username, password)
