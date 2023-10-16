@@ -52,20 +52,17 @@ def merge_steps(steps, new_steps) -> list:
         if missing_fields(new_day):
             continue
         for existing_day in steps[::-1]:
-            if should_update_step_count(existing_day, new_day):
-                existing_day["steps"] = new_day["steps"]
+            if existing_day["date"] == new_day["date"]:
+                if should_update_step_count(existing_day, new_day):
+                    existing_day["steps"] = new_day["steps"]
                 break
             elif new_day["date"] > existing_day["date"]:
                 steps.append(new_day)
                 break
-            else:
-                break
     return steps
 
 def should_update_step_count(existing_day, new_day) -> bool:
-    if existing_day["date"] == new_day["date"]:
-        return existing_day["steps"] is None or new_day["steps"] > existing_day["steps"] 
-    return False
+    return existing_day["steps"] is None or new_day["steps"] > existing_day["steps"]
 
 def missing_fields(day) -> bool:
     return day["date"] is None or day["steps"] is None
