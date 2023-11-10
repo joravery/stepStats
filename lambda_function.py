@@ -65,9 +65,8 @@ def add_streak_to_summary(stats, summary):
 
 
 def success(message):
-    if os.getenv('PRINT_SUMMARY') is not None:
-        print(json.dumps(message))
-    return {'statusCode': 200, 'body': json.dumps(message)}
+    print(json.dumps(message))
+    return {'statusCode': 200, 'body': message}
 
 
 def merge_steps(steps, new_steps) -> tuple:
