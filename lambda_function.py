@@ -9,7 +9,7 @@ from util.credentials.aws_lambda import AWSLambdaCredentials
 from util.day import Day
 from util.garmin_get import get_steps_since_date
 from util.statistics import Statistics
-from util.steps_file import get_current_file_from_s3, upload_compressed_steps_to_s3
+from util.steps_file import get_compressed_file_from_s3, upload_compressed_file_to_s3
 
 STEPS_FILE_NAME = os.environ['steps_file_name']
 WEBSITE_BUCKET_NAME = os.environ['public_bucket_name']
@@ -17,21 +17,19 @@ SECURE_BUCKET_NAME = os.environ['secure_bucket_name']
 
 
 def lambda_handler(event, context):
-    steps = get_current_file_from_s3(SECURE_BUCKET_NAME, STEPS_FILE_NAME)
+    steps = get_compressed_file_from_s3(SECURE_BUCKET_NAME, STEPS_FILE_NAME)
     creds = AWSLambdaCredentials()
     _, _, tokens = creds.get_credentials()
 
     steps = sorted(steps, key=lambda x: x["date"])
-    yesterday = datetime.datetime.strptime(steps[-2]["date"], "%Y-%m-%d").date()
-    print(f"Last date in current steps: {yesterday}")
 
-    new_steps = get_steps_update_garmin_creds(yesterday, creds, tokens)
+    new_steps = get_steps_update_garmin_creds(creds, tokens)
     steps = merge_steps(steps, new_steps)
-    upload_compressed_steps_to_s3(compress_string(str(jsonpickle.encode(steps, unpicklable=False))), SECURE_BUCKET_NAME,
-                                  STEPS_FILE_NAME)
+    upload_compressed_file_to_s3(compress_string(str(jsonpickle.encode(steps, unpicklable=False))), SECURE_BUCKET_NAME,
+                                 STEPS_FILE_NAME)
 
     steps, stats = get_steps_stats([Day(x) for x in steps if x['date'] and x['steps']])
-    (max_streak, streak_steps, streak_end) = stats.find_maximum_streak()
+    max_streak, streak_steps, streak_end = stats.find_maximum_streak()
     if streak_end == datetime.date.today() - datetime.timedelta(days=1) or streak_end == datetime.date.today():
         print(
             f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an "
@@ -48,7 +46,7 @@ def lambda_handler(event, context):
     stats_metadata = build_metadata_from_stats(stats)
     compressed_json = prepare_json(steps, stats_metadata)
 
-    upload_compressed_steps_to_s3(compressed_json, WEBSITE_BUCKET_NAME, STEPS_FILE_NAME)
+    upload_compressed_file_to_s3(compressed_json, WEBSITE_BUCKET_NAME, STEPS_FILE_NAME)
     return {
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
@@ -80,8 +78,10 @@ def missing_fields(day) -> bool:
     return day["date"] is None or day["steps"] is None
 
 
-def get_steps_update_garmin_creds(start_date, creds, tokens) -> list:
-    res = get_steps_since_date(start_date, tokens)
+def get_steps_update_garmin_creds(creds, tokens) -> list:
+    start_date = datetime.date.today()
+    num_days = 2
+    res = get_steps_since_date(start_date, num_days, tokens)
     if res["needs_update"]:
         print("Updating credentials")
         creds.save_credentials(res["new_tokens"])
