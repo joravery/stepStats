@@ -171,3 +171,4 @@ bin
 lib
 pyvenv.cfg
 .vscode
+.idea
