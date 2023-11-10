@@ -1,7 +1,7 @@
 class Statistics:
     def __init__(self, step_days: list, step_goal: int = 5000) -> None:
-        ## Only allow initialization with a list of days
-        ## Process all immediately
+        # Only allow initialization with a list of days
+        # Calculate stats all immediately
         if step_days is None or len(step_days) <= 0:
             raise ValueError("Cannot analyze statistics without any days")
         self.days = step_days
@@ -13,9 +13,9 @@ class Statistics:
         self.calculate_stats()
 
     def calculate_stats(self):
-        '''
+        """
         Method for generating aggregate statistics and assigning daily ranks
-        '''
+        """
         self.__calculate_sums__()
         self.__calculate_averages__()
         self.__calculate_percent_at_goal__()
@@ -61,7 +61,8 @@ class Statistics:
             self.__add_to_stats_dict__(self.years, day.steps, f"{year}", goal_met)
             self.__add_to_stats_dict__(self.months, day.steps, f"{year}-{month}", goal_met)
 
-    def __add_to_stats_dict__(self, stats_dict, daily_step_count, key, goal_met):
+    @staticmethod
+    def __add_to_stats_dict__(stats_dict, daily_step_count, key, goal_met):
         if key not in stats_dict:
             stats_dict[key] = {"steps": 0, "days": 0, "goal_days": 0}
 

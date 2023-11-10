@@ -7,7 +7,7 @@ import jsonpickle
 from util.compression import compress_string
 from util.credentials.aws_lambda import AWSLambdaCredentials
 from util.day import Day
-from util.garmin_get import get_steps_since_date
+from util.garmin_download import Download
 from util.statistics import Statistics
 from util.steps_file import get_compressed_file_from_s3, upload_compressed_file_to_s3
 
@@ -20,42 +20,60 @@ def lambda_handler(event, context):
     steps = get_compressed_file_from_s3(SECURE_BUCKET_NAME, STEPS_FILE_NAME)
     creds = AWSLambdaCredentials()
     _, _, tokens = creds.get_credentials()
+    summary = {"tokens_updated": False, "steps_updated": False}
 
     steps = sorted(steps, key=lambda x: x["date"])
+    new_steps = get_steps_update_garmin_creds(creds, tokens, summary)
+    steps, updated = merge_steps(steps, new_steps)
 
-    new_steps = get_steps_update_garmin_creds(creds, tokens)
-    steps = merge_steps(steps, new_steps)
+    # If there were no new steps, we don't need to update anything
+    if not updated:
+        return success(summary)
+    summary["steps_updated"] = True
+
+    # Store just the steps and dates in the secure bucket for later usage
     upload_compressed_file_to_s3(compress_string(str(jsonpickle.encode(steps, unpicklable=False))), SECURE_BUCKET_NAME,
                                  STEPS_FILE_NAME)
 
+    # Now calculate stats and store them in the public bucket for the website to use
     steps, stats = get_steps_stats([Day(x) for x in steps if x['date'] and x['steps']])
-    max_streak, streak_steps, streak_end = stats.find_maximum_streak()
-    if streak_end == datetime.date.today() - datetime.timedelta(days=1) or streak_end == datetime.date.today():
-        print(
-            f"Longest streak is {max_streak:,} days and is still in progress with {streak_steps:,} total steps for an "
-            f"average of {int(streak_steps / max_streak):,} per day!")
-    else:
-        print(
-            f"Longest streak is {max_streak:,} days, ended on {streak_end} and had a total of {streak_steps:,} steps "
-            f"for an average of {int(streak_steps / max_streak):,} per day!")
-    total_days = len(stats.days)
-    print(
-        f"Total days: {total_days:,}. Steps all-time: {stats.all_time_steps:,}."
-        f"Average steps/day: {int(stats.all_time_steps / total_days):,}.")
-
+    add_streak_to_summary(stats, summary)
+    add_all_time_stats_to_summary(stats, summary)
     stats_metadata = build_metadata_from_stats(stats)
     compressed_json = prepare_json(steps, stats_metadata)
 
     upload_compressed_file_to_s3(compressed_json, WEBSITE_BUCKET_NAME, STEPS_FILE_NAME)
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+
+    return success(summary)
 
 
-def merge_steps(steps, new_steps) -> list:
+def add_all_time_stats_to_summary(stats, summary):
+    summary["all_time_steps"] = f"{stats.all_time_steps:,}"
+    summary["all_time_days"] = f"{len(stats.days):,}"
+    summary["all_time_average"] = f"{stats.all_time_average:,}"
+
+
+def add_streak_to_summary(stats, summary):
+    max_streak, streak_steps, streak_end = stats.find_maximum_streak()
+    summary["longest_streak"] = f"{max_streak:,}"
+    summary["longest_streak_steps"] = f"{streak_steps:,}"
+    summary["longest_streak_average_steps"] = f"{streak_steps // max_streak:,}"
+    summary["longest_streak_current_streak"] = True
+    if not (streak_end == datetime.date.today() - datetime.timedelta(days=1) or streak_end == datetime.date.today()):
+        summary["longest_streak_current_streak"] = False
+        summary["longest_streak_end"] = str(streak_end)
+
+
+def success(message):
+    if os.getenv('PRINT_SUMMARY') is not None:
+        print(json.dumps(message))
+    return {'statusCode': 200, 'body': json.dumps(message)}
+
+
+def merge_steps(steps, new_steps) -> tuple:
+    updated = False
     if steps is None or new_steps is None:
-        return []
+        return [], updated
     for new_day in new_steps:
         if missing_fields(new_day):
             continue
@@ -63,11 +81,13 @@ def merge_steps(steps, new_steps) -> list:
             if existing_day["date"] == new_day["date"]:
                 if should_update_step_count(existing_day, new_day):
                     existing_day["steps"] = new_day["steps"]
+                    updated = True
                 break
             elif new_day["date"] > existing_day["date"]:
                 steps.append(new_day)
+                updated = True
                 break
-    return steps
+    return steps, updated
 
 
 def should_update_step_count(existing_day, new_day) -> bool:
@@ -78,14 +98,29 @@ def missing_fields(day) -> bool:
     return day["date"] is None or day["steps"] is None
 
 
-def get_steps_update_garmin_creds(creds, tokens) -> list:
+def get_steps_update_garmin_creds(creds, tokens, summary) -> list:
     start_date = datetime.date.today()
     num_days = 2
-    res = get_steps_since_date(start_date, num_days, tokens)
+    res = get_steps_since_date(start_date, num_days, tokens, summary)
     if res["needs_update"]:
-        print("Updating credentials")
+        summary["Tokens updated"] = True
         creds.save_credentials(res["new_tokens"])
     return res["steps"]
+
+
+def get_steps_since_date(end_date, num_days, tokens, summary):
+    download = Download(tokens=tokens)
+    name, garmin_id = download.login()
+    if name is None or garmin_id is None:
+        summary["Login error"] = True
+    summary["Display name"] = name
+    summary["Garmin id"] = garmin_id
+    summary["Days to download"] = num_days
+    summary["End date"] = str(end_date)
+
+    step_days = download.get_daily_summaries(end_date, num_days)
+    needs_update, new_tokens = download.check_for_refreshed_tokens()
+    return {"steps": step_days, "needs_update": needs_update, "new_tokens": new_tokens}
 
 
 def get_steps_stats(steps) -> tuple:
