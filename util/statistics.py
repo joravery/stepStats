@@ -1,8 +1,8 @@
 class Statistics:
-    def __init__(self, step_days: list, step_goal: int=5000) -> None:
+    def __init__(self, step_days: list, step_goal: int = 5000) -> None:
         ## Only allow initialization with a list of days
         ## Process all immediately
-        if step_days is None or len(step_days) <=0:
+        if step_days is None or len(step_days) <= 0:
             raise ValueError("Cannot analyze statistics without any days")
         self.days = step_days
         self.step_goal = step_goal
@@ -17,10 +17,9 @@ class Statistics:
         Method for generating aggregate statistics and assigning daily ranks
         '''
         self.__calculate_sums__()
-        self.__calculate_averages__() 
+        self.__calculate_averages__()
         self.__calculate_percent_at_goal__()
         self.__calculate_daily_rank__()
-
 
     def get_most_recent_days(self, day_count=10):
         count = min(day_count, len(self.days))
@@ -33,6 +32,7 @@ class Statistics:
             if current_streak == max_streak and current_steps > streak_steps:
                 return True
             return False
+
         max_streak = 0
         streak_steps = 0
         streak_end = ''
@@ -48,7 +48,7 @@ class Statistics:
                     max_streak = current_streak
                     streak_steps = current_steps
                     streak_end = self.days[i].date if i > 0 else ''
-            else:	
+            else:
                 current_streak = 0
                 current_steps = 0
         return (max_streak, streak_steps, streak_end)
@@ -60,11 +60,11 @@ class Statistics:
             goal_met = day.steps >= self.step_goal
             self.__add_to_stats_dict__(self.years, day.steps, f"{year}", goal_met)
             self.__add_to_stats_dict__(self.months, day.steps, f"{year}-{month}", goal_met)
-    
+
     def __add_to_stats_dict__(self, stats_dict, daily_step_count, key, goal_met):
         if key not in stats_dict:
-            stats_dict[key]={"steps": 0, "days": 0, "goal_days": 0}
-        
+            stats_dict[key] = {"steps": 0, "days": 0, "goal_days": 0}
+
         stats_dict[key]["steps"] += daily_step_count
         stats_dict[key]["days"] += 1
         if goal_met:
@@ -78,22 +78,23 @@ class Statistics:
 
     def __calculate_percent_at_goal__(self):
         for month in self.months:
-            self.months[month]["goal_percent"] = float(self.months[month]["goal_days"]/self.months[month]["days"] * 100)
+            self.months[month]["goal_percent"] = float(
+                self.months[month]["goal_days"] / self.months[month]["days"] * 100)
 
         for year in self.years:
-            self.years[year]["goal_percent"] = float(self.years[year]["goal_days"]/self.years[year]["days"] * 100)
+            self.years[year]["goal_percent"] = float(self.years[year]["goal_days"] / self.years[year]["days"] * 100)
 
     def __calculate_averages__(self):
         for month in self.months:
-            self.months[month]["daily_average_steps"] = int(self.months[month]["steps"]/self.months[month]["days"])
+            self.months[month]["daily_average_steps"] = int(self.months[month]["steps"] / self.months[month]["days"])
 
         for year in self.years:
-            self.years[year]["daily_average_steps"] = int(self.years[year]["steps"]/self.years[year]["days"])
+            self.years[year]["daily_average_steps"] = int(self.years[year]["steps"] / self.years[year]["days"])
 
         self.all_time_average = self.all_time_steps // len(self.days)
 
     def __calculate_daily_rank__(self):
         step_sorted = sorted(self.days, key=lambda k: k.steps, reverse=True)
         for i in range(0, len(step_sorted)):
-            step_sorted[i].all_time_rank = i+1
-            step_sorted[i].top_percentile = i/len(step_sorted) * 100
+            step_sorted[i].all_time_rank = i + 1
+            step_sorted[i].top_percentile = i / len(step_sorted) * 100

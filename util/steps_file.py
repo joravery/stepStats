@@ -1,8 +1,10 @@
 import boto3
 import jsonpickle
+
 from util.compression import decompress_string
 
-def get_current_file_from_s3(bucket, key):
+
+def get_compressed_file_from_s3(bucket, key):
     try:
         s3 = boto3.client('s3')
         pickled_steps = s3.get_object(
@@ -19,20 +21,23 @@ def get_current_file_from_s3(bucket, key):
         return None
 
 
-def upload_compressed_steps_to_s3(json_bytes, bucket, key) -> None:
+def upload_compressed_file_to_s3(json_bytes, bucket, key) -> None:
     s3 = boto3.client('s3')
-    print(f"Uploading {key} to s3://{bucket}/{key}")
-    s3.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=json_bytes,
-        ContentEncoding="br",
-        Metadata={
-            "Content-Encoding": "br",
-            "Content-Type": "application/json"
-        }
-    )
+    try:
+        s3.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=json_bytes,
+            ContentEncoding="br",
+            Metadata={
+                "Content-Encoding": "br",
+                "Content-Type": "application/json"
+            }
+        )
+    except Exception as e:
+        print(f"Error when uploading {key} to {bucket}: {e}")
+        return None
 
 
 if __name__ == "__main__":
-    print(get_current_file_from_s3())
+    print(get_compressed_file_from_s3())
