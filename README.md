@@ -11,4 +11,4 @@ As of Oct 15th 2023 Python 3.10 was required (instead of 3.11+) for the brotli c
 The lambda function will refresh the oauth2 token when it expires.
 The oauth1 token is currently used by the garth library to refresh the oauth2 token instead of the refresh token.
 To update the oauth1 token, run the script:
-`python3 scripts/refresh_oauth1_token.py`
+secure_bucket_name='bucket_name' credential_file_name=GarminConnectConfig.json `python3 scripts/credential_refresh.py`
