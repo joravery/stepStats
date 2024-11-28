@@ -1,16 +1,31 @@
 class Statistics:
     def __init__(self, step_days: list, step_goal: int = 5000) -> None:
         # Only allow initialization with a list of days
-        # Calculate stats all immediately
+        # Calculate all stats immediately
         if step_days is None or len(step_days) <= 0:
             raise ValueError("Cannot analyze statistics without any days")
-        self.days = step_days
+        # Kludge to fix a bug where the same day is added twice
+        ded = self.dedupe_days(step_days)
+        self.days = ded
         self.step_goal = step_goal
         self.all_time_steps = 0
         self.all_time_average = 0
         self.months = {}
         self.years = {}
         self.calculate_stats()
+
+    @staticmethod
+    def dedupe_days(step_days):
+        seen = dict()
+        for day in step_days:
+            if day.date not in seen:
+                seen[day.date] = day
+            elif day.steps > seen[day.date].steps:
+                seen[day.date] = day
+        deduped = list(seen.values())
+        if len(deduped) != len(step_days):
+            print(f"Day count before deduping: {len(step_days)}, day count after deduping: {len(deduped)}")
+        return deduped
 
     def calculate_stats(self):
         """

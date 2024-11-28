@@ -75,6 +75,7 @@ def merge_steps(steps, new_steps) -> tuple:
         return [], updated
     for new_day in new_steps:
         if missing_fields(new_day):
+            print(f"Missing fields in day: {new_day}")
             continue
         for existing_day in steps[::-1]:
             if existing_day["date"] == new_day["date"]:

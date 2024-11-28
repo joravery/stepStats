@@ -1,3 +1,5 @@
+import os
+
 import boto3
 import jsonpickle
 
@@ -40,4 +42,4 @@ def upload_compressed_file_to_s3(json_bytes, bucket, key) -> None:
 
 
 if __name__ == "__main__":
-    print(get_compressed_file_from_s3())
+    print(get_compressed_file_from_s3(os.environ['secure_bucket_name'], os.environ['steps_file_name']))

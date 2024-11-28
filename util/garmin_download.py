@@ -9,9 +9,11 @@ class Download:
 
     def __init__(self, tokens=None):
         """Create a new Download class instance."""
+        garth.http.USER_AGENT = {"User-Agent": "GCM-iOS-5.7.2.1"}
         self.display_name = ""
         self.full_name = ""
         self.garth = garth.Client()
+
         self.garth.loads(tokens)
         self.original_tokens_expires = self.garth.oauth2_token.expires_at
 
