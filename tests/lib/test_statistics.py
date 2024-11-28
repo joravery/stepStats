@@ -71,12 +71,13 @@ def test_find_maximum_streak_no_streak():
 
 def test_two_streaks():
     first_streak_length = random.randrange(1, 20)
-    second_streak_length = random.randrange(21, 200)
+    second_streak_length = random.randrange(22, 200)
     (first_days, first_expected_steps, first_expected_end) = get_streak(before_days=5, streak_days=first_streak_length,
-                                                                        after_days=2)
+                                                                        after_days=1, start_year=2019)
     (second_days, second_expected_steps, second_expected_end) = get_streak(before_days=1,
                                                                            streak_days=second_streak_length,
-                                                                           after_days=5)
+                                                                           after_days=5,
+                                                                           start_year=2020)
     all_days = first_days + second_days
     stats = Statistics(all_days, step_goal=STEP_GOAL)
 
@@ -121,11 +122,11 @@ def test_percent_at_goal():
     assert (stats.years["2022"]["goal_percent"] == 50)
 
 
-def get_streak(before_days=random.randrange(1, 100), streak_days=0, after_days=random.randrange(1, 100)):
+def get_streak(before_days=random.randrange(1, 100), streak_days=0, after_days=random.randrange(1, 100), start_year=2019):
     days = []
     end_date = None
     steps = 0
-    date = datetime.date(year=2019, month=1, day=1)
+    date = datetime.date(year=start_year, month=1, day=1)
     for i in range(0, before_days):
         days.append(get_single_valid_day(steps=random.randrange(1, STEP_GOAL), date=date))
         date = date + datetime.timedelta(days=1)
